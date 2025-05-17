@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expcontrol</title>
+  <style>
+    body {
+      background-image: url('rm222-mind-20.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      color: white;
+    }
+    .lock-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    .lock-screen h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    .lock-screen input {
+      padding: 12px;
+      font-size: 28px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      width: 150px;
+      text-align: center;
+      background: #111;
+      border: 2px solid #555;
+      color: white;
+      outline: none;
+    }
+    .lock-screen button {
+      padding: 10px 20px;
+      font-size: 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      background-color: #007aff;
+      color: white;
+      border: none;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      color: white;
+      margin-left: 10px;
+    }
+    #resetBtn {
+      width: 60px;
+      margin-right: 10px;
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    input, button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
+      box-sizing: border-box;
+    }
+    #amount, #note {
+      color: #b6a4a4;
+      text-align: center;
+    }
+    #addBtn {
+      color: green;
+      font-weight: bold;
+    }
+    #addMoneyBtn {
+      color: red;
+      width: 40%;
+      max-width: 120px;
+      display: inline-block;
+    }
+    #balanceBtn {
+      margin-left: 10px;
+      color: red;
+      width: 40%;
+      max-width: 120px;
+      display: inline-block;
+    }
+    #entriesBtn {
+      color: blue;
+      font-weight: bold;
+    }
+    #output {
+      display: none;
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid white;
+      border-radius: 12px;
+      padding: 10px;
+      width: 90%;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #1c1c1c;
+    }
+    ul {
+      color: white;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      padding: 8px;
+      border-bottom: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="lock-screen" id="lockScreen">
+    <h2>Enter Passcode</h2>
+    <input type="password" id="pinInput" placeholder="••••" inputmode="numeric" maxlength="4">
+    <button onclick="checkPIN()">Unlock</button>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <div class="header">
+      <h1>Expcontrol</h1>
+      <button id="resetBtn">Reset</button>
+    </div>
+    <input type="number" id="amount" placeholder="amount">
+    <input type="text" id="note" placeholder="note">
+    <button id="addBtn">add</button>
+    <div style="display: flex; justify-content: center; gap: 10px;">
+      <button id="addMoneyBtn">+₹</button>
+      <button id="balanceBtn">Balance</button>
+    </div>
+    <button id="entriesBtn">Entries</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function checkPIN() {
+      const pin = document.getElementById('pinInput').value;
+      if (pin === '5055') {
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+      } else {
+        alert('Incorrect PIN');
+      }
+    }
+
+    let balance = parseFloat(localStorage.getItem('balance')) || 0;
+    let entries = JSON.parse(localStorage.getItem('entries')) || [];
+
+    const amountInput = document.getElementById('amount');
+    const noteInput = document.getElementById('note');
+    const outputDiv = document.getElementById('output');
+
+    function saveData() {
+      localStorage.setItem('balance', balance);
+      localStorage.setItem('entries', JSON.stringify(entries));
+    }
+
+    function resetData() {
+      if (confirm("Are you sure you want to reset all data?")) {
+        balance = 0;
+        entries = [];
+        localStorage.removeItem('balance');
+        localStorage.removeItem('entries');
+        outputDiv.style.display = 'block';
+        outputDiv.innerHTML = "<p>Data has been reset.</p>";
+      }
+    }
+
+    document.getElementById('addBtn').onclick = () => {
+      const amount = parseFloat(amountInput.value);
+      const note = noteInput.value.trim();
+      if (!isNaN(amount) && amount > 0 && note !== "") {
+        if (balance >= amount) {
+          balance -= amount;
+          entries.push({ type: 'spend', amount, note });
+          saveData();
+          amountInput.value = '';
+          noteInput.value = '';
+          alert("Entry added!");
+        } else {
+          alert("Insufficient balance!");
+        }
+      } else {
+        alert("Please enter valid amount and note.");
+      }
+    };
+
+    document.getElementById('addMoneyBtn').onclick = () => {
+      const money = parseFloat(prompt("Enter amount to add to balance:"));
+      if (!isNaN(money) && money > 0) {
+        balance += money;
+        entries.push({ type: 'add', amount: money, note: 'Added to balance' });
+        saveData();
+        alert(`₹${money} added to balance.`);
+      } else {
+        alert("Invalid amount.");
+      }
+    };
+
+    document.getElementById('balanceBtn').onclick = () => {
+      let totalAdded = 0;
+      let totalSpent = 0;
+
+      for (let entry of entries) {
+        if (entry.type === 'add') {
+          totalAdded += entry.amount;
+        } else if (entry.type === 'spend') {
+          totalSpent += entry.amount;
+        }
+      }
+
+      outputDiv.style.display = 'block';
+      outputDiv.innerHTML = `
+        <h3>Balance Summary</h3>
+        <p><strong>Total Added:</strong> ₹${totalAdded.toFixed(2)}</p>
+        <p><strong>Total Spent:</strong> ₹${totalSpent.toFixed(2)}</p>
+        <p><strong>Current Balance:</strong> ₹${balance.toFixed(2)}</p>
+      `;
+    };
+
+    document.getElementById('entriesBtn').onclick = () => {
+      outputDiv.style.display = 'block';
+      if (entries.length === 0) {
+        outputDiv.innerHTML = "<p>No entries yet.</p>";
+        return;
+      }
+      const list = entries.map(e =>
+        `<li>${e.type === 'add' ? '+' : '-'}₹${e.amount.toFixed(2)} - ${e.note}</li>`
+      ).join('');
+      outputDiv.innerHTML = `<ul>${list}</ul>`;
+    };
+
+    document.getElementById('resetBtn').onclick = resetData;
+  </script>
+</body>
+</html>
