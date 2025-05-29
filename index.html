@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Expcontrol</title>
   <style>
     body {
@@ -121,6 +121,13 @@
       margin-right: auto;
       background-color: #1c1c1c;
     }
+    #liveBalance {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #00ffcc;
+    }
     ul {
       color: white;
       list-style: none;
@@ -145,6 +152,10 @@
       <h1>Expcontrol</h1>
       <button id="resetBtn">Reset</button>
     </div>
+
+    <!-- Live Balance Display -->
+    <p id="liveBalance">Live Balance: ₹0.00</p>
+
     <input type="number" id="amount" placeholder="amount">
     <input type="text" id="note" placeholder="note">
     <button id="addBtn">add</button>
@@ -174,6 +185,11 @@
     const amountInput = document.getElementById('amount');
     const noteInput = document.getElementById('note');
     const outputDiv = document.getElementById('output');
+    const liveBalanceEl = document.getElementById('liveBalance');
+
+    function updateLiveBalanceDisplay() {
+      liveBalanceEl.textContent = `Live Balance: ₹${balance.toFixed(2)}`;
+    }
 
     function saveData() {
       localStorage.setItem('balance', balance);
@@ -186,6 +202,7 @@
         entries = [];
         localStorage.removeItem('balance');
         localStorage.removeItem('entries');
+        updateLiveBalanceDisplay();
         outputDiv.style.display = 'block';
         outputDiv.innerHTML = "<p>Data has been reset.</p>";
       }
@@ -199,6 +216,7 @@
           balance -= amount;
           entries.push({ type: 'spend', amount, note });
           saveData();
+          updateLiveBalanceDisplay();
           amountInput.value = '';
           noteInput.value = '';
           alert("Entry added!");
@@ -216,6 +234,7 @@
         balance += money;
         entries.push({ type: 'add', amount: money, note: 'Added to balance' });
         saveData();
+        updateLiveBalanceDisplay();
         alert(`₹${money} added to balance.`);
       } else {
         alert("Invalid amount.");
@@ -256,6 +275,17 @@
     };
 
     document.getElementById('resetBtn').onclick = resetData;
+
+    // Auto-Increase ₹500 Every Second
+    setInterval(() => {
+      balance += 500;
+      entries.push({ type: 'add', amount: 500, note: 'Auto increment' });
+      saveData();
+      updateLiveBalanceDisplay();
+    }, 3600000); // every 1 second
+
+    // Initial update
+    updateLiveBalanceDisplay();
   </script>
 </body>
 </html>
