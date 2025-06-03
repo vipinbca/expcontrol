@@ -153,7 +153,6 @@
       <button id="resetBtn">Reset</button>
     </div>
 
-    <!-- Live Balance Display -->
     <p id="liveBalance">Live Balance: ₹0.00</p>
 
     <input type="number" id="amount" placeholder="amount">
@@ -168,124 +167,144 @@
     <div id="output"></div>
   </div>
 
-  <script>
-    function checkPIN() {
-      const pin = document.getElementById('pinInput').value;
-      if (pin === '5055') {
-        document.getElementById('lockScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-      } else {
-        alert('Incorrect PIN');
-      }
+ <script>
+  let balance = parseFloat(localStorage.getItem('balance')) || 0;
+  let entries = JSON.parse(localStorage.getItem('entries')) || [];
+
+  const amountInput = document.getElementById('amount');
+  const noteInput = document.getElementById('note');
+  const outputDiv = document.getElementById('output');
+  const liveBalanceEl = document.getElementById('liveBalance');
+
+  function updateLiveBalanceDisplay() {
+    liveBalanceEl.textContent = `Live Balance: ₹${balance.toFixed(2)}`;
+  }
+
+  function saveData() {
+    localStorage.setItem('balance', balance);
+    localStorage.setItem('entries', JSON.stringify(entries));
+  }
+
+  function applyMissedAutoIncrement() {
+    const lastUpdate = parseInt(localStorage.getItem('lastUpdate')) || Date.now();
+    const now = Date.now();
+    const hoursPassed = Math.floor((now - lastUpdate) / (1000 * 60 * 60)); // hours
+
+    if (hoursPassed > 0) {
+      const increment = hoursPassed * 500;
+      balance += increment;
+      entries.push({ type: 'add', amount: increment, note: `Auto-increment for ${hoursPassed} hour(s)` });
+      saveData();
     }
 
-    let balance = parseFloat(localStorage.getItem('balance')) || 0;
-    let entries = JSON.parse(localStorage.getItem('entries')) || [];
+    // Save the new timestamp whether or not any hours passed
+    localStorage.setItem('lastUpdate', now);
+    updateLiveBalanceDisplay();
+  }
 
-    const amountInput = document.getElementById('amount');
-    const noteInput = document.getElementById('note');
-    const outputDiv = document.getElementById('output');
-    const liveBalanceEl = document.getElementById('liveBalance');
-
-    function updateLiveBalanceDisplay() {
-      liveBalanceEl.textContent = `Live Balance: ₹${balance.toFixed(2)}`;
-    }
-
-    function saveData() {
-      localStorage.setItem('balance', balance);
-      localStorage.setItem('entries', JSON.stringify(entries));
-    }
-
-    function resetData() {
-      if (confirm("Are you sure you want to reset all data?")) {
-        balance = 0;
-        entries = [];
-        localStorage.removeItem('balance');
-        localStorage.removeItem('entries');
-        updateLiveBalanceDisplay();
-        outputDiv.style.display = 'block';
-        outputDiv.innerHTML = "<p>Data has been reset.</p>";
-      }
-    }
-
-    document.getElementById('addBtn').onclick = () => {
-      const amount = parseFloat(amountInput.value);
-      const note = noteInput.value.trim();
-      if (!isNaN(amount) && amount > 0 && note !== "") {
-        if (balance >= amount) {
-          balance -= amount;
-          entries.push({ type: 'spend', amount, note });
-          saveData();
-          updateLiveBalanceDisplay();
-          amountInput.value = '';
-          noteInput.value = '';
-          alert("Entry added!");
-        } else {
-          alert("Insufficient balance!");
-        }
-      } else {
-        alert("Please enter valid amount and note.");
-      }
-    };
-
-    document.getElementById('addMoneyBtn').onclick = () => {
-      const money = parseFloat(prompt("Enter amount to add to balance:"));
-      if (!isNaN(money) && money > 0) {
-        balance += money;
-        entries.push({ type: 'add', amount: money, note: 'Added to balance' });
-        saveData();
-        updateLiveBalanceDisplay();
-        alert(`₹${money} added to balance.`);
-      } else {
-        alert("Invalid amount.");
-      }
-    };
-
-    document.getElementById('balanceBtn').onclick = () => {
-      let totalAdded = 0;
-      let totalSpent = 0;
-
-      for (let entry of entries) {
-        if (entry.type === 'add') {
-          totalAdded += entry.amount;
-        } else if (entry.type === 'spend') {
-          totalSpent += entry.amount;
-        }
-      }
-
-      outputDiv.style.display = 'block';
-      outputDiv.innerHTML = `
-        <h3>Balance Summary</h3>
-        <p><strong>Total Added:</strong> ₹${totalAdded.toFixed(2)}</p>
-        <p><strong>Total Spent:</strong> ₹${totalSpent.toFixed(2)}</p>
-        <p><strong>Current Balance:</strong> ₹${balance.toFixed(2)}</p>
-      `;
-    };
-
-    document.getElementById('entriesBtn').onclick = () => {
-      outputDiv.style.display = 'block';
-      if (entries.length === 0) {
-        outputDiv.innerHTML = "<p>No entries yet.</p>";
-        return;
-      }
-      const list = entries.map(e =>
-        `<li>${e.type === 'add' ? '+' : '-'}₹${e.amount.toFixed(2)} - ${e.note}</li>`
-      ).join('');
-      outputDiv.innerHTML = `<ul>${list}</ul>`;
-    };
-
-    document.getElementById('resetBtn').onclick = resetData;
-
-    // Auto-Increase ₹500 Every Second
+  function startLiveHourlyIncrement() {
     setInterval(() => {
       balance += 500;
-      entries.push({ type: 'add', amount: 500, note: 'Auto increment' });
+      entries.push({ type: 'add', amount: 500, note: 'Hourly Auto-increment' });
+      updateLiveBalanceDisplay();
+      saveData();
+      localStorage.setItem('lastUpdate', Date.now());
+    }, 3600000); // every hour (60min * 60s * 1000ms)
+  }
+
+  function checkPIN() {
+    const pin = document.getElementById('pinInput').value;
+    if (pin === '5055') {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      applyMissedAutoIncrement();
+      startLiveHourlyIncrement();
+    } else {
+      alert('Incorrect PIN');
+    }
+  }
+
+  document.getElementById('addBtn').onclick = () => {
+    const amount = parseFloat(amountInput.value);
+    const note = noteInput.value.trim();
+    if (!isNaN(amount) && amount > 0 && note !== "") {
+      if (balance >= amount) {
+        balance -= amount;
+        entries.push({ type: 'spend', amount, note });
+        saveData();
+        updateLiveBalanceDisplay();
+        amountInput.value = '';
+        noteInput.value = '';
+        alert("Entry added!");
+      } else {
+        alert("Insufficient balance!");
+      }
+    } else {
+      alert("Please enter valid amount and note.");
+    }
+  };
+
+  document.getElementById('addMoneyBtn').onclick = () => {
+    const money = parseFloat(prompt("Enter amount to add to balance:"));
+    if (!isNaN(money) && money > 0) {
+      balance += money;
+      entries.push({ type: 'add', amount: money, note: 'Added to balance' });
       saveData();
       updateLiveBalanceDisplay();
-    }, 3600000); // every 1 second
+      alert(`₹${money} added to balance.`);
+    } else {
+      alert("Invalid amount.");
+    }
+  };
 
-    // Initial update
-    updateLiveBalanceDisplay();
-  </script>
+  document.getElementById('balanceBtn').onclick = () => {
+    let totalAdded = 0;
+    let totalSpent = 0;
+    for (let entry of entries) {
+      if (entry.type === 'add') {
+        totalAdded += entry.amount;
+      } else if (entry.type === 'spend') {
+        totalSpent += entry.amount;
+      }
+    }
+    outputDiv.style.display = 'block';
+    outputDiv.innerHTML = `
+      <h3>Balance Summary</h3>
+      <p><strong>Total Added:</strong> ₹${totalAdded.toFixed(2)}</p>
+      <p><strong>Total Spent:</strong> ₹${totalSpent.toFixed(2)}</p>
+      <p><strong>Current Balance:</strong> ₹${balance.toFixed(2)}</p>
+    `;
+  };
+
+  document.getElementById('entriesBtn').onclick = () => {
+    outputDiv.style.display = 'block';
+    if (entries.length === 0) {
+      outputDiv.innerHTML = "<p>No entries yet.</p>";
+      return;
+    }
+    const list = entries.map(e =>
+      `<li>${e.type === 'add' ? '+' : '-'}₹${e.amount.toFixed(2)} - ${e.note}</li>`
+    ).join('');
+    outputDiv.innerHTML = `<ul>${list}</ul>`;
+  };
+
+  document.getElementById('resetBtn').onclick = () => {
+    if (confirm("Are you sure you want to reset all data?")) {
+      balance = 0;
+      entries = [];
+      localStorage.removeItem('balance');
+      localStorage.removeItem('entries');
+      localStorage.removeItem('lastUpdate');
+      updateLiveBalanceDisplay();
+      outputDiv.style.display = 'block';
+      outputDiv.innerHTML = "<p>Data has been reset.</p>";
+    }
+  };
+
+  // Initial display
+  updateLiveBalanceDisplay();
+</script>
+
+
 </body>
 </html>
