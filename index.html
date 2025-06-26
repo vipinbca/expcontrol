@@ -191,7 +191,7 @@
     const hoursPassed = Math.floor((now - lastUpdate) / (1000 * 60 * 60)); // hours
 
     if (hoursPassed > 0) {
-      const increment = hoursPassed * 500;
+      const increment = hoursPassed * 1500;
       balance += increment;
       entries.push({ type: 'add', amount: increment, note: `Auto-increment for ${hoursPassed} hour(s)` });
       saveData();
@@ -204,8 +204,8 @@
 
   function startLiveHourlyIncrement() {
     setInterval(() => {
-      balance += 500;
-      entries.push({ type: 'add', amount: 500, note: 'Hourly Auto-increment' });
+      balance += 1500;
+      entries.push({ type: 'add', amount: 1500, note: 'Hourly Auto-increment' });
       updateLiveBalanceDisplay();
       saveData();
       localStorage.setItem('lastUpdate', Date.now());
